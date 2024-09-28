@@ -78,13 +78,19 @@ void initServer() {
     server.send(200, "text/html", msg);
   });
 
+  server.on("/relays", []() {
+    String relays =
+      String(relayStatus[0]) + ","
+      + String(relayStatus[1]) + ","
+      + String(relayStatus[2]) + ","
+      + String(relayStatus[3]);
+
+    server.send(200, "text/plain", relays);
+  });
+
   server.on("/save-states", []() {
     setDefaultStates();
     server.send(200, "text/plain", "ok");
-  });
-
-  server.on("/test-read", []() {
-    server.send(200, "text/plain", readFileAsString("/states.json"));
   });
 
   server.on("/set-time", []() {
@@ -159,6 +165,30 @@ void initServer() {
       setRelaysStatus(true);
     } else {
       setRelaysStatus(false);
+    }
+
+    server.send(200, "text/plain", "ok");
+  });
+
+  server.on("/set-relay", []() {
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(100);
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    String r = server.arg("r");
+    String n = server.arg("s");
+
+    if (n[0] == '\0' || r[0] == '\0') {
+      return server.send(422, "text/plain", "input error");
+    }
+
+    int relayNum = r.toInt();
+    int status = n.toInt();
+
+    if (status == 1) {
+      setRelayStatus(relayNum, true);
+    } else {
+      setRelayStatus(relayNum, false);
     }
 
     server.send(200, "text/plain", "ok");
