@@ -41,7 +41,7 @@ void initWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   //Serial.print("Connecting to WiFi ..");
-  delay(3000);
+  delay(1000);
   while (WiFi.status() != WL_CONNECTED) {
     //Serial.print('.');
     delay(1000);
@@ -203,23 +203,10 @@ void initServer() {
       return;
     }
 
-    // serialize to json
-    StaticJsonDocument<2048> doc;
-    JsonArray array = doc.to<JsonArray>();
-    for (int x = 0; x < relaySchedulesLength; x++) {
-      JsonObject data = array.createNestedObject();
-      data["time"] = relaySchedules[x].time;
-      data["relayIndex"] = relaySchedules[x].relayIndex;
-      data["status"] = relaySchedules[x].status;
-    }
-    String test = "";
-    serializeJson(array, test);
-
-    // save
-    writeFile("/data.json", test.c_str());
+    String jsonData = saveScheduleData();
 
     // response
-    server.send(200, "text/plain", test);
+    server.send(200, "text/plain", jsonData);
   });
 
   server.on("/remove-schedule", []() {
@@ -232,7 +219,9 @@ void initServer() {
     // remove
     removeRelaySchedule(time, relayIndex);
 
-    server.send(200, "text/plain", "ok");
+    String jsonData = saveScheduleData();
+
+    server.send(200, "text/plain", jsonData);
   });
 
 
@@ -279,7 +268,7 @@ void setRelayStatus(int relayIndex, bool active) {
 
 void setup() {
   //Serial.begin(9600);
-  delay(5000);
+  delay(500);
 
   rtc.begin();
   //rtc.DSadjust(20, 50, 10, 2023, 9, 21);  // 00:19:21 16 Mar 2022
@@ -535,6 +524,25 @@ bool iskScheduleExist(String time, int relayIndex) {
   }
 
   return isExist;
+}
+
+String saveScheduleData() {
+    // serialize to json
+    StaticJsonDocument<2048> doc;
+    JsonArray array = doc.to<JsonArray>();
+    for (int x = 0; x < relaySchedulesLength; x++) {
+      JsonObject data = array.createNestedObject();
+      data["time"] = relaySchedules[x].time;
+      data["relayIndex"] = relaySchedules[x].relayIndex;
+      data["status"] = relaySchedules[x].status;
+    }
+    String test = "";
+    serializeJson(array, test);
+
+    // save
+    writeFile("/data.json", test.c_str());
+
+    return test;
 }
 
 bool addRelaySchedule(String time, int relayIndex, int status) {
